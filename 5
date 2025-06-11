@@ -1,287 +1,108 @@
-App.js
+import numpy as np
 
-import React from "react";
+import pandas as pd
 
-import FigureList from "./FigureList";
+import matplotlib.pyplot as plt
 
-import "./App.css";
+import seaborn as sns
 
-function App() {
+from sklearn.model_selection import train_test_split
 
-return (
+from sklearn.neighbors import KNeighborsClassifier
 
-<div className="App">
+from sklearn.metrics import accuracy_score
 
-<h1>Figure List</h1>
+values=np.random.rand(100)
 
-<FigureList />
+print("\nValues:")
 
-</div>
-);
+print(values)
 
-}
+labels=[]
 
-export default App;
+for i in values[:50]:
 
-FigureList.js
+if i<=0.5:
 
-import React, { useState } from "react";
+labels.append('Class1')
 
-const BasicFigure = ({ image, caption, onRemove }) => {
+else:
 
-return (
+labels.append('Class2')
 
-<div className="basic-figure">
+labels+=[None]*50
 
-<img src={image} alt={caption} className="figure-image" />
+print("\nlabels:")
 
-<figcaption className="figure-caption">{caption}</figcaption>
+print(labels)
 
-<button className="remove-button" onClick={onRemove}>
+data={
 
-Remove
+"Point":[f"x{i+1}" for i in range(100)],
 
-</button>
+"Value":values,
 
-</div>
-
-);
-
-};
-
-const FigureList = () => {
-
-const [figures, setFigures] = useState([
-
-{ id: 1, image: "https://www.w3schools.com/w3images/lights.jpg", caption: "Beautiful
-
-Lights" },
-
-{ id: 2, image: "https://www.w3schools.com/w3images/nature.jpg", caption: "Nature" },
-
-]);
-
-const [newImage, setNewImage] = useState("");
-
-const [newCaption, setNewCaption] = useState("");
-
-const addFigure = () => {
-
-if (newImage && newCaption) {
-
-setFigures([
-
-...figures,
-
-{
-
-id: Date.now(), image: newImage, caption: newCaption },
-
-]);
-
-setNewImage("");
-
-setNewCaption("");
+"Label":labels
 
 }
 
-};
+print("\n Data Frame:")
 
-const removeFigure = (id) => {
+df=pd.DataFrame(data)
 
-setFigures(figures.filter((figure) => figure.id !== id));
+print(df)
 
-};
+num_col=df.select_dtypes(include=['int','float']).columns
 
-return (
+for col in num_col:
 
-<div className="figure-list">
+df[col].hist(figsize=(12,8),bins=10,edgecolor='black')
 
-<div className="form">
+plt.title(f"Histogram for {col}",fontsize=16)
 
-<input
+plt.xlabel(col)
 
-type="text"
+plt.ylabel("Frequency")
 
-placeholder="Image URL"
+plt.show()
 
-value={newImage}
-onChange={(e) => setNewImage(e.target.value)}
+labeled_df=df[df["Label"].notna()]
+X_train=labeled_df[["Value"]]
 
-/>
+Y_train=labeled_df["Label"]
 
-<input
+unlabeled_df=df[df["Label"].isna()].copy()
 
-type="text"
+X_test=unlabeled_df[["Value"]]
 
-placeholder="Caption"
+true_labels=["Class1" if x<=0.5 else "Class2" for x in values[50:]]
 
-value={newCaption}
+k_values=[1,2,3,4,5,20,30]
 
-onChange={(e) => setNewCaption(e.target.value)}
+results={}
 
-/>
+accuracies={}
 
-<button onClick={addFigure}>Add Image</button>
+for k in k_values:
 
-</div>
+knn=KNeighborsClassifier(n_neighbors=k)
 
-<div className="grid">
+knn.fit(X_train,Y_train)
 
-{figures.map((figure) => (
+predictions=knn.predict(X_test)
 
-<BasicFigure
+results[k]=predictions
 
-key={figure.id}
+accuracy=accuracy_score(true_labels,predictions)
 
-image={figure.image}
+accuracies[k]=accuracy
 
-caption={figure.caption}
+print(f"Accuracy for k={k}:{accuracy:2f}%")
 
-onRemove={() => removeFigure(figure.id)}
+unlabeled_df[f"Label_k{k}"]=predictions
 
-/>
+df1=unlabeled_df.drop(columns=['Label'],axis=1)
 
-))}
+print("\n Dataframe with 'Label':")
 
-</div>
-
-</div>
-
-);
-
-};
-
-export default FigureList;
-
-App.css
-
-.App {
-
-font-family: Arial, sans-serif;
-
-text-align: center;
-
-padding: 20px;
-
-}
-
-.figure-list .form {
-
-margin-bottom: 20px;
-
-}
-
-.figure-list .form input {
-
-margin: 5px;
-
-padding: 8px;
-
-width: 200px;
-
-border: 1px solid #ccc;
-
-border-radius: 5px;
-
-}
-
-.figure-list .form button {
-
-padding: 8px 12px;
-
-background-color: #4caf50;
-
-color: white;
-
-border: none;
-
-border-radius: 5px;
-cursor: pointer;
-
-}
-
-.figure-list .form button:hover {
-
-background-color: #45a049;
-
-}
-
-.grid {
-
-display: grid;
-
-grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-
-gap: 20px;
-
-}
-
-.basic-figure {
-
-position: relative;
-
-background: #f9f9f9;
-
-padding: 10px;
-
-border-radius: 10px;
-
-box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
-
-text-align: center;
-
-}
-
-.figure-image {
-
-max-width: 100%;
-
-border-radius: 8px;
-
-transition: transform 0.3s ease;
-
-}
-
-.figure-image:hover {
-
-transform: scale(1.05);
-
-}
-
-.figure-caption {
-
-margin-top: 10px;
-
-font-size: 14px;
-
-color: #555;
-
-}
-
-.remove-button {
-
-position: absolute;
-
-top: 5px;
-
-right: 5px;
-
-padding: 5px;
-
-background-color: #e74c3c;
-
-color: white;
-
-border: none;
-
-border-radius: 50%;
-
-cursor: pointer;
-
-}
-
-.remove-button:hover {
-
-background-color: #c0392b
-}
+print(df1)
